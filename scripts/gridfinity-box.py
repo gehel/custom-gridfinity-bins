@@ -1,10 +1,10 @@
-from gridfinity import Properties, make_box, export_box, export_svg
+from gridfinity import Properties, make_box, export_box, export_svg, GridfinityDimension
 
 UNITS_WIDE = 4 # The number of Gridfinity units wide (left to right)
 UNITS_LONG = 3 # The number of Gridfinity units long (front to back)
 UNITS_HIGH = 4 # The number of Gridfinity units high (in 7mm increments)
 
-# This define how each row is divided. The number of entries in this list
+# This defines how each row is divided. The number of entries in this list
 # must be equal to the number of UNITS_LONG defined above.
 DIVISIONS = [
     [1, 2, 1], # If defined as a list, it will make n number of drawers
@@ -35,9 +35,7 @@ MAKE_SCREW_HOLE = False
 
 # Make the properties object to be passed to the make_box method.
 properties = Properties(
-    UNITS_WIDE,
-    UNITS_LONG,
-    UNITS_HIGH,
+    GridfinityDimension(UNITS_WIDE, UNITS_LONG, UNITS_HIGH),
     DIVISIONS,
     DRAW_FINGER_SCOOP,
     DRAW_LABEL_LEDGE,
