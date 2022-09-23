@@ -50,10 +50,13 @@ class GridfinityDimension:
             raise InvalidPropertyError("Units high cannot be less than 2.")
 
 
+Divisions = List[Union[List[float], int]]
+
+
 @dataclass
 class Properties:
     dimension: GridfinityDimension
-    divisions: List[Union[List[float], int]]
+    divisions: Divisions
 
     draw_finger_scoop: bool
     draw_label_ledge: bool
@@ -65,6 +68,18 @@ class Properties:
             raise IncorrectNumberOfRowsError(
                 "Number of rows in divisions array must be equal to the number of units long."
             )
+
+
+def draw_bases(self: Workplane, dimension: GridfinityDimension) -> Workplane:
+    return (
+        self
+        .rarray(42, 42, dimension.x, dimension.y)
+        .eachpoint(lambda loc: (
+            cq.Workplane()
+            .drawBase()
+            .val().located(loc)
+        ))
+    )
 
 
 def draw_base(
@@ -82,34 +97,18 @@ def draw_base(
     )
 
 
-def draw_bases(self: Workplane, dimension) -> Workplane:
-    return (
-        self
-        .rarray(42, 42, dimension.x, dimension.y)
-        .eachpoint(lambda loc: (
-            cq.Workplane()
-            .drawBase()
-            .val().located(loc)
-        ))
-    )
-
-
-def draw_buckets(
-    self: Workplane,
-    prop: Properties
-) -> Workplane:
-
+def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Divisions) -> Workplane:
     is_drawer_too_small = False
     small_drawer_width = 15
 
     sketches = []
     x_origin, y_origin = (1, 1)
-    for row in prop.divisions:
+    for row in divisions:
         if isinstance(row, int):
             row = [1] * row
-        widths = [round(ratio / sum(row) * (prop.dimension.x_mm - (len(row) + 1)), 2)
+        widths = [round(ratio / sum(row) * (dimension.x_mm - (len(row) + 1)), 2)
                   for ratio in row]
-        height = (prop.dimension.y_mm - (prop.dimension.y + 1)) / prop.dimension.y
+        height = (dimension.y_mm - (dimension.y + 1)) / dimension.y
 
         for width in widths:
             if width < small_drawer_width:
@@ -125,8 +124,8 @@ def draw_buckets(
                     -height / 2
                 )))
                 .moved(Location(Vector(
-                    -prop.dimension.x_mm / 2 + x_origin,
-                    prop.dimension.y_mm / 2 - y_origin
+                    -dimension.x_mm / 2 + x_origin,
+                    dimension.y_mm / 2 - y_origin
                 )))
             )
             x_origin = x_origin + width + 1
@@ -143,22 +142,19 @@ def draw_buckets(
     return (
         self
         .faces("<Z[0]").workplane(centerOption="CenterOfBoundBox").tag("base")
-        .box(prop.dimension.x_mm, prop.dimension.y_mm, prop.dimension.z_mm, (True, True, False))
+        .box(dimension.x_mm, dimension.y_mm, dimension.z_mm, (True, True, False))
         .edges("|Z").fillet(4)
         .faces(">Z")
         .workplane()
         .placeSketch(*sketches)
-        .extrude(BOTTOM_THICKNESS - prop.dimension.z_mm, "cut")
+        .extrude(BOTTOM_THICKNESS - dimension.z_mm, "cut")
     )
 
 
-def draw_mate(
-    self: Workplane,
-    prop: Properties
-) -> Workplane:
+def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
 
-    width = prop.dimension.x_mm - 0.5
-    length = prop.dimension.y_mm - 0.5
+    width = dimension.x_mm - 0.5
+    length = dimension.y_mm - 0.5
     outer_fillet = 3.75
 
     s1 = (
@@ -188,7 +184,7 @@ def draw_mate(
     top = (
         cq.Workplane().copyWorkplane(
             self.workplaneFromTagged("base")
-            .workplane(offset=prop.dimension.z_mm - 2.84)
+            .workplane(offset=dimension.z_mm - 2.84)
         )
         .box(width, length, 7.24, (True, True, False))
         .edges("|Z").fillet(outer_fillet)
@@ -207,7 +203,7 @@ def draw_mate(
     return self.union(top)
 
 
-def draw_front_surface(self: Workplane, dimension) -> Workplane:
+def draw_front_surface(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     return (
         self.faces(">Z[3]")
         .workplane()
@@ -216,19 +212,12 @@ def draw_front_surface(self: Workplane, dimension) -> Workplane:
     )
 
 
-def draw_finger_scoops(
-    self: Workplane,
-    prop: Properties
-) -> Workplane:
-
-    if not prop.draw_finger_scoop:
-        return self
-
-    bucket_length = (prop.dimension.y_mm - (prop.dimension.y + 1)) / prop.dimension.y
-    scoop_radius = min(prop.dimension.z_mm * 0.6, bucket_length * 0.9)
+def draw_finger_scoops(self: Workplane, dimension: GridfinityDimension) -> Workplane:
+    bucket_length = (dimension.y_mm - (dimension.y + 1)) / dimension.y
+    scoop_radius = min(dimension.z_mm * 0.6, bucket_length * 0.9)
 
     sketches = []
-    for i in range(0, prop.dimension.y):
+    for i in range(0, dimension.y):
         sketch = (
             cq.Sketch()
             .rect(scoop_radius, scoop_radius)
@@ -236,10 +225,10 @@ def draw_finger_scoops(
             .circle(scoop_radius, mode="s")
             .moved(Location(Vector(
                 scoop_radius / 2 -
-                0.5 * bucket_length * prop.dimension.y -
-                math.floor(prop.dimension.y / 2) +
-                (0.5 if prop.dimension.y % 2 == 0 else 0),
-                scoop_radius / 2 - (prop.dimension.z_mm - BOTTOM_THICKNESS) / 2)))
+                0.5 * bucket_length * dimension.y -
+                math.floor(dimension.y / 2) +
+                (0.5 if dimension.y % 2 == 0 else 0),
+                scoop_radius / 2 - (dimension.z_mm - BOTTOM_THICKNESS) / 2)))
             .moved(Location(Vector(
                 i * (bucket_length + 1) + (1.6 if i == 0 else 0),
                 0
@@ -251,31 +240,24 @@ def draw_finger_scoops(
         self.faces(">X[1]")
         .workplane(centerOption="CenterOfBoundBox")
         .placeSketch(*sketches)
-        .extrude(prop.dimension.x_mm - 1)
+        .extrude(dimension.x_mm - 1)
     )
 
 
-def draw_label_ledge(
-    self: Workplane,
-    prop: Properties
-) -> Workplane:
-
-    if not prop.draw_label_ledge:
-        return self
-
-    bucket_length = (prop.dimension.y_mm - (prop.dimension.y + 1)) / prop.dimension.y
+def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workplane:
+    bucket_length = (dimension.y_mm - (dimension.y + 1)) / dimension.y
     ledge_length = 12 + 0.75
     back_ledge_offset = 2.9
 
-    max_ledge_height = prop.dimension.z_mm - BOTTOM_THICKNESS
+    max_ledge_height = dimension.z_mm - BOTTOM_THICKNESS
 
     last_offset = 0
     ledge_height = min(max_ledge_height, ledge_length)
 
     sketches = []
-    for i in range(0, prop.dimension.y):
+    for i in range(0, dimension.y):
 
-        if i == prop.dimension.y - 1:
+        if i == dimension.y - 1:
             last_offset = back_ledge_offset
             ledge_height = min(max_ledge_height, ledge_length + last_offset)
 
@@ -296,8 +278,8 @@ def draw_label_ledge(
             .vertices("<X")
             .fillet(0.6)
             .moved(Location(Vector(
-                - 0.5 - (0.5 * prop.dimension.y - 1) * (bucket_length + 1),
-                (prop.dimension.z_mm - BOTTOM_THICKNESS) / 2)))
+                - 0.5 - (0.5 * dimension.y - 1) * (bucket_length + 1),
+                (dimension.z_mm - BOTTOM_THICKNESS) / 2)))
             .moved(Location(Vector(
                 i * (bucket_length + 1) - last_offset,
                 0
@@ -309,18 +291,12 @@ def draw_label_ledge(
         self.faces(">X[1]")
         .workplane(centerOption="CenterOfBoundBox")
         .placeSketch(*sketches)
-        .extrude(prop.dimension.x_mm - 1.5)
+        .extrude(dimension.x_mm - 1.5)
     )
 
 
-def draw_magnet_bore_holes(
-    self: Workplane,
-    prop: Properties
-) -> Workplane:
-
+def draw_magnet_holes(self: Workplane) -> Workplane:
     self.plane.zDir = Vector(0, 0, -1)
-    if not (prop.make_magnet_hole or prop.make_screw_hole):
-        return self
 
     self = (
         self
@@ -330,15 +306,24 @@ def draw_magnet_bore_holes(
         .vertices()
     )
 
-    if prop.make_screw_hole is True:
-        self = self.cboreHole(3, 6.5, 2.4, 6)
-    elif prop.make_magnet_hole is True:
-        self = self.hole(6.5, 2.4)
-
-    return self
+    return self.hole(6.5, 2.4)
 
 
-def shave_outer_shell(self: Workplane, dimension) -> Workplane:
+def draw_screw_holes(self: Workplane) -> Workplane:
+    self.plane.zDir = Vector(0, 0, -1)
+
+    self = (
+        self
+        .faces("<Z[-1]")
+        .faces(cq.selectors.AreaNthSelector(-1))
+        .rect(26, 26, forConstruction=True)
+        .vertices()
+    )
+
+    return self.cboreHole(3, 6.5, 2.4, 6)
+
+
+def shave_outer_shell(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     return (
         self
         .faces("<Z[-1]")
@@ -361,7 +346,8 @@ Workplane.drawMate = draw_mate
 Workplane.drawFrontSurface = draw_front_surface
 Workplane.drawFingerScoops = draw_finger_scoops
 Workplane.drawLabelLedge = draw_label_ledge
-Workplane.drawMagnetBoreHoles = draw_magnet_bore_holes
+Workplane.drawMagnetHoles = draw_magnet_holes
+Workplane.drawScrewHoles = draw_screw_holes
 Workplane.shaveOuterShell = shave_outer_shell
 
 
@@ -374,17 +360,7 @@ def make_box(
     angular_tolerance: float = 0.1,
     opt=None
 ) -> Workplane:
-    box = (
-        cq.Workplane()
-        .drawBases(prop.dimension)
-        .drawBuckets(prop)
-        .drawFrontSurface(prop.dimension)
-        .drawFingerScoops(prop)
-        .drawLabelLedge(prop)
-        .drawMate(prop)
-        .drawMagnetBoreHoles(prop)
-        .shaveOuterShell(prop.dimension)
-    )
+    box = make_gridfinity_box(cq.Workplane(), prop)
 
     if out_file:
         export_box(
@@ -396,6 +372,25 @@ def make_box(
             opt=opt
         )
     return box
+
+
+def make_gridfinity_box(wp: Workplane, prop: Properties):
+    wp = wp \
+        .drawBases(prop.dimension) \
+        .drawBuckets(prop.dimension, prop.divisions) \
+        .drawFrontSurface(prop.dimension)
+    if prop.draw_finger_scoop:
+        wp = wp.drawFingerScoops(prop.dimension)
+    if prop.draw_label_ledge:
+        wp = wp.drawLabelLedge(prop.dimension)
+    wp = wp.drawMate(prop.dimension)
+    if prop.make_magnet_hole:
+        wp = wp.drawMagnetHoles()
+    if prop.make_screw_hole:
+        wp = wp.drawScrewHoles()
+
+    wp = wp.shaveOuterShell(prop.dimension)
+    return wp
 
 
 def export_box(
