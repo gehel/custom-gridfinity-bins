@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 BOTTOM_THICKNESS = 2
 
+Divisions = List[Union[List[float], int]]
+
 
 class IncorrectNumberOfRowsError(Exception):
     pass
@@ -33,11 +35,11 @@ class GridfinityDimension:
 
     @property
     def x_mm(self):
-        return self.x * 42
+        return self.x * 42 - 0.5
 
     @property
     def y_mm(self):
-        return self.y * 42
+        return self.y * 42 - 0.5
 
     @property
     def z_mm(self):
@@ -48,9 +50,6 @@ class GridfinityDimension:
             raise InvalidPropertyError("Width or length cannot be less than 1.")
         if self.z < 2:
             raise InvalidPropertyError("Units high cannot be less than 2.")
-
-
-Divisions = List[Union[List[float], int]]
 
 
 @dataclass
@@ -87,13 +86,13 @@ def draw_base(
 ) -> Workplane:
     return (
         self
-        .box(37.2, 37.2, 2.6, (True, True, False))
+        .box(36.7, 36.7, 2.6, (True, True, False))
         .edges("|Z").fillet(1.6)
         .faces("<Z").chamfer(0.8)
         .faces(">Z")
-        .box(42, 42, 2.4, (True, True, False))
-        .edges("|Z and (>Y or <Y)").fillet(4)
-        .faces(">>Z[-2]").edges("<Z").chamfer(2.39999999)
+        .box(41.5, 41.5, 2.4, (True, True, False))
+        .edges("|Z and (>Y or <Y)").fillet(3.75)
+        .faces(">>Z[-2]").edges("<Z").chamfer(2.4-0.000001)
     )
 
 
@@ -106,32 +105,33 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     for row in divisions:
         if isinstance(row, int):
             row = [1] * row
-        widths = [round(ratio / sum(row) * (dimension.x_mm - (len(row) + 1)), 2)
+        buckets_x = [round(ratio / sum(row) * (dimension.x_mm - (len(row) + 1)*0.8), 2)
                   for ratio in row]
-        height = (dimension.y_mm - (dimension.y + 1)) / dimension.y
+        number_of_y_walls = (dimension.y + 1)
+        bucket_y = (dimension.y_mm - number_of_y_walls * 0.8) / dimension.y
 
-        for width in widths:
-            if width < small_drawer_width:
+        for bucket_x in buckets_x:
+            if bucket_x < small_drawer_width:
                 is_drawer_too_small = True
             sketch = (
                 cq.Sketch()
-                .rect(width, height)
+                .rect(bucket_x, bucket_y)
                 .vertices()
-                .fillet(3)
+                .fillet(3.75 - 0.4)
                 .edges()
                 .moved(Location(Vector(
-                    width / 2,
-                    -height / 2
+                    bucket_x / 2,
+                    -bucket_y / 2
                 )))
                 .moved(Location(Vector(
                     -dimension.x_mm / 2 + x_origin,
                     dimension.y_mm / 2 - y_origin
                 )))
             )
-            x_origin = x_origin + width + 1
+            x_origin = x_origin + bucket_x + 0.8
             sketches.append(sketch)
         x_origin = 1
-        y_origin = y_origin + height + 1
+        y_origin = y_origin + bucket_y + 0.8
 
     if is_drawer_too_small:
         warnings.warn(
@@ -143,7 +143,7 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
         self
         .faces("<Z[0]").workplane(centerOption="CenterOfBoundBox").tag("base")
         .box(dimension.x_mm, dimension.y_mm, dimension.z_mm, (True, True, False))
-        .edges("|Z").fillet(4)
+        .edges("|Z").fillet(3.75)
         .faces(">Z")
         .workplane()
         .placeSketch(*sketches)
@@ -151,10 +151,26 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     )
 
 
+def draw_mate2(self: Workplane, dimension: GridfinityDimension) -> Workplane:
+    height = 2.4 + 1 + 1.6
+
+    top = cq.Workplane().copyWorkplane(
+            self.workplaneFromTagged('base')
+            .workplane(offset=dimension.z_mm + 0.0001)
+    ) \
+        .box(dimension.x_mm, dimension.y_mm, height, (True, True, False)) \
+        .edges('|Z') \
+        .fillet(3.75) \
+        .faces('>Z').sketch().rect(dimension.x_mm - 2*2.4, dimension.y_mm - 2*2.4).vertices().fillet(3.75 - 2.4).finalize().cutThruAll() \
+        .faces('>Z').sketch().rect(dimension.x_mm, dimension.y_mm).vertices().fillet(3.75).finalize().cutThruAll(taper=45) \
+        .faces('<Z').sketch().rect(dimension.x_mm - 2*0.8, dimension.y_mm - 2*0.8).vertices().fillet(3.75).finalize().cutThruAll(taper=-45)
+    return self.union(top)
+
+
 def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
 
-    width = dimension.x_mm - 0.5
-    length = dimension.y_mm - 0.5
+    width = dimension.x_mm
+    length = dimension.y_mm
     outer_fillet = 3.75
 
     s1 = (
@@ -177,7 +193,7 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
 
     s4 = (
         cq.Sketch()
-        .rect(width - 1 * 2, length - 1 * 2)
+        .rect(width - 0.8 * 2, length - 0.8 * 2)
         .vertices().fillet(outer_fillet - 1)
     )
 
@@ -203,18 +219,9 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     return self.union(top)
 
 
-def draw_front_surface(self: Workplane, dimension: GridfinityDimension) -> Workplane:
-    return (
-        self.faces(">Z[3]")
-        .workplane()
-        .transformed(offset=(0, -dimension.y_mm / 2 + 1))
-        .box(dimension.x_mm, 1.85, dimension.z_mm - 2, (True, False, False))
-    )
-
-
 def draw_finger_scoops(self: Workplane, dimension: GridfinityDimension) -> Workplane:
-    bucket_length = (dimension.y_mm - (dimension.y + 1)) / dimension.y
-    scoop_radius = min(dimension.z_mm * 0.6, bucket_length * 0.9)
+    bucket_length = (dimension.y_mm - (dimension.y + 1)*0.8) / dimension.y
+    scoop_radius = min(dimension.z_mm * 0.3, bucket_length * 0.9)
 
     sketches = []
     for i in range(0, dimension.y):
@@ -240,7 +247,7 @@ def draw_finger_scoops(self: Workplane, dimension: GridfinityDimension) -> Workp
         self.faces(">X[1]")
         .workplane(centerOption="CenterOfBoundBox")
         .placeSketch(*sketches)
-        .extrude(dimension.x_mm - 1)
+        .extrude(dimension.x_mm - 0.8)
     )
 
 
@@ -323,32 +330,14 @@ def draw_screw_holes(self: Workplane) -> Workplane:
     return self.cboreHole(3, 6.5, 2.4, 6)
 
 
-def shave_outer_shell(self: Workplane, dimension: GridfinityDimension) -> Workplane:
-    return (
-        self
-        .faces("<Z[-1]")
-        .faces(cq.selectors.AreaNthSelector(-1))
-        .workplane(centerOption="CenterOfBoundBox")
-        .sketch()
-        .rect(dimension.x_mm, dimension.y_mm, tag="outer")
-        .rect(dimension.x_mm - 0.5, dimension.y_mm - 0.5, mode="s", tag="inner")
-        .vertices(tag="outer")
-        .vertices(tag="inner").fillet(3.75)
-        .finalize()
-        .cutThruAll()
-    )
-
-
 Workplane.drawBase = draw_base
 Workplane.drawBases = draw_bases
 Workplane.drawBuckets = draw_buckets
 Workplane.drawMate = draw_mate
-Workplane.drawFrontSurface = draw_front_surface
 Workplane.drawFingerScoops = draw_finger_scoops
 Workplane.drawLabelLedge = draw_label_ledge
 Workplane.drawMagnetHoles = draw_magnet_holes
 Workplane.drawScrewHoles = draw_screw_holes
-Workplane.shaveOuterShell = shave_outer_shell
 
 
 def make_box(
@@ -377,8 +366,7 @@ def make_box(
 def make_gridfinity_box(wp: Workplane, prop: Properties):
     wp = wp \
         .drawBases(prop.dimension) \
-        .drawBuckets(prop.dimension, prop.divisions) \
-        .drawFrontSurface(prop.dimension)
+        .drawBuckets(prop.dimension, prop.divisions)
     if prop.draw_finger_scoop:
         wp = wp.drawFingerScoops(prop.dimension)
     if prop.draw_label_ledge:
@@ -389,7 +377,6 @@ def make_gridfinity_box(wp: Workplane, prop: Properties):
     if prop.make_screw_hole:
         wp = wp.drawScrewHoles()
 
-    wp = wp.shaveOuterShell(prop.dimension)
     return wp
 
 

@@ -5,9 +5,9 @@ import inspect
 
 from cadquery2 import Workplane
 
-from gridfinity import draw_base, draw_bases, draw_buckets, draw_finger_scoops, draw_front_surface, draw_label_ledge, \
-    draw_magnet_holes, draw_mate, draw_screw_holes, GridfinityDimension, \
-    make_gridfinity_box, Properties, shave_outer_shell
+from gridfinity import draw_base, draw_bases, draw_buckets, draw_finger_scoops, draw_label_ledge, \
+    draw_magnet_holes, draw_mate, draw_mate2, draw_screw_holes, GridfinityDimension, \
+    make_gridfinity_box, Properties
 
 
 class MyTestCase(unittest.TestCase):
@@ -17,7 +17,7 @@ class MyTestCase(unittest.TestCase):
     """
     properties = Properties(
         GridfinityDimension(2, 3, 4),
-        [1, 1, 1],
+        [1, 2, [2, 1]],
         True,
         True,
         False,
@@ -35,21 +35,26 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_buckets(self):
         wp = cq.Workplane()
-        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 30)
+        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5.6)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
         export_for_testing(wp)
 
-    def test_draw_front_surface(self):
-        # TODO: not really sure what this front surface is about
+    def test_draw_up_to_buckets(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
-        wp = draw_front_surface(wp, self.properties.dimension)
         export_for_testing(wp)
 
     def test_draw_finger_scoops(self):
         wp = cq.Workplane()
         wp = wp.box(1, self.properties.dimension.y_mm, self.properties.dimension.z_mm)
+        wp = draw_finger_scoops(wp, self.properties.dimension)
+        export_for_testing(wp)
+
+    def test_draw_up_to_finger_scoops(self):
+        wp = cq.Workplane()
+        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
         wp = draw_finger_scoops(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -59,12 +64,41 @@ class MyTestCase(unittest.TestCase):
         wp = draw_label_ledge(wp, self.properties.dimension)
         export_for_testing(wp)
 
+    def test_draw_up_to_label_ledge(self):
+        wp = cq.Workplane()
+        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_label_ledge(wp, self.properties.dimension)
+        export_for_testing(wp)
+
     def test_draw_mate(self):
         wp = cq.Workplane()
         wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1) \
             .faces("<Z[0]") \
             .tag('base')
         wp = draw_mate(wp, self.properties.dimension)
+        export_for_testing(wp)
+
+    def test_draw_up_to_mate(self):
+        wp = cq.Workplane()
+        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_mate(wp, self.properties.dimension)
+        export_for_testing(wp)
+
+    def test_draw_mate2(self):
+        wp = cq.Workplane()
+        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1) \
+            .faces("<Z[0]") \
+            .tag('base')
+        wp = draw_mate2(wp, self.properties.dimension)
+        export_for_testing(wp)
+
+    def test_draw_up_to_mate2(self):
+        wp = cq.Workplane()
+        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_mate2(wp, self.properties.dimension)
         export_for_testing(wp)
 
     def test_draw_magnet_holes(self):
@@ -77,13 +111,6 @@ class MyTestCase(unittest.TestCase):
         wp = cq.Workplane()
         wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5)
         wp = draw_screw_holes(wp)
-        export_for_testing(wp)
-
-    def test_shave_outer_shell(self):
-        wp = cq.Workplane()
-        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, self.properties.dimension.z_mm)
-        wp = shave_outer_shell(wp, self.properties.dimension)
-        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, self.properties.dimension.z_mm/2)
         export_for_testing(wp)
 
     def test_make_gridfinity_box(self):
