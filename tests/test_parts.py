@@ -118,6 +118,14 @@ class MyTestCase(unittest.TestCase):
         wp = make_gridfinity_box(wp, self.properties)
         export_for_testing(wp)
 
+    def test_minimal_box(self):
+        dimension = GridfinityDimension(1, 1, 8)
+        wp = cq.Workplane()
+        wp = draw_bases(wp, dimension)
+        wp = draw_buckets(wp, dimension, [1])
+        wp = draw_mate2(wp, dimension)
+        export_for_testing(wp)
+
 
 def export_for_testing(wp: Workplane) -> None:
     name = inspect.getframeinfo(inspect.currentframe().f_back).function
