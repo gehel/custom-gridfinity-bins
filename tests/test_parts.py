@@ -73,9 +73,11 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_mate(self):
         wp = cq.Workplane()
-        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1) \
-            .faces("<Z[0]") \
+        wp = (
+            wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1)
+            .faces('<Z[0]')
             .tag('base')
+        )
         wp = draw_mate(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -88,9 +90,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_mate2(self):
         wp = cq.Workplane()
-        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1) \
-            .faces("<Z[0]") \
-            .tag('base')
+        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1).faces('<Z[0]').tag('base')
         wp = draw_mate2(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -141,12 +141,12 @@ def export_svg(wp: Workplane, name: str) -> None:
         tolerance=0.1,
         angularTolerance=0.1,
         opt={
-            "showAxes": False,
-            "marginLeft": 10,
-            "marginTop": 10,
-            "projectionDir": (2.75, -2.6, 2),
-            "showHidden": False,
-            "focus": 500
+            'showAxes': False,
+            'marginLeft': 10,
+            'marginTop': 10,
+            'projectionDir': (2.75, -2.6, 2),
+            'showHidden': False,
+            'focus': 500
         })
 
 

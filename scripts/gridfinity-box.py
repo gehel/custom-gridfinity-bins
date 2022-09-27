@@ -45,14 +45,14 @@ properties = Properties(
 
 # This makes the box, writes it to an output STL, and returns it.
 # If no filename is provided, it will not output it to a file.
-result = make_box(properties, "output.stl")
+result = make_box(properties, 'output.stl')
 
 
 # If you did not output to a file when making the box, you may use
 # the export_box function to export it.
-export_box(result, "output2.stl")
+export_box(result, 'output2.stl')
 
 
 # Or if you want a nicely rendered SVG, use export_svg
-export_svg(result, "output.svg")
+export_svg(result, 'output.svg')
 

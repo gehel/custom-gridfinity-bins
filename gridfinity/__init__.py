@@ -47,9 +47,9 @@ class GridfinityDimension:
 
     def __post_init__(self):
         if self.x < 1 or self.y < 1:
-            raise InvalidPropertyError("Width or length cannot be less than 1.")
+            raise InvalidPropertyError('Width or length cannot be less than 1.')
         if self.z < 2:
-            raise InvalidPropertyError("Units high cannot be less than 2.")
+            raise InvalidPropertyError('Units high cannot be less than 2.')
 
 
 @dataclass
@@ -65,7 +65,7 @@ class Properties:
     def __post_init__(self):
         if len(self.divisions) != self.dimension.y:
             raise IncorrectNumberOfRowsError(
-                "Number of rows in divisions array must be equal to the number of units long."
+                'Number of rows in divisions array must be equal to the number of units long.'
             )
 
 
@@ -87,12 +87,12 @@ def draw_base(
     return (
         self
         .box(36.7, 36.7, 2.6, (True, True, False))
-        .edges("|Z").fillet(1.6)
-        .faces("<Z").chamfer(0.8)
-        .faces(">Z")
+        .edges('|Z').fillet(1.6)
+        .faces('<Z').chamfer(0.8)
+        .faces('>Z')
         .box(41.5, 41.5, 2.4, (True, True, False))
-        .edges("|Z and (>Y or <Y)").fillet(3.75)
-        .faces(">>Z[-2]").edges("<Z").chamfer(2.4-0.000001)
+        .edges('|Z and (>Y or <Y)').fillet(3.75)
+        .faces('>>Z[-2]').edges('<Z').chamfer(2.4-0.000001)
     )
 
 
@@ -135,35 +135,42 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
 
     if is_drawer_too_small:
         warnings.warn(
-            f"Drawer width is less than or equal to {small_drawer_width}mm",
+            f'Drawer width is less than or equal to {small_drawer_width}mm',
             SmallDimensionsWarning
         )
 
     return (
         self
-        .faces("<Z[0]").workplane(centerOption="CenterOfBoundBox").tag("base")
+        .faces('<Z[0]').workplane(centerOption='CenterOfBoundBox').tag('base')
         .box(dimension.x_mm, dimension.y_mm, dimension.z_mm, (True, True, False))
-        .edges("|Z").fillet(3.75)
-        .faces(">Z")
+        .edges('|Z').fillet(3.75)
+        .faces('>Z')
         .workplane()
         .placeSketch(*sketches)
-        .extrude(BOTTOM_THICKNESS - dimension.z_mm, "cut")
+        .extrude(BOTTOM_THICKNESS - dimension.z_mm, 'cut')
     )
 
 
 def draw_mate2(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     height = 2.4 + 1 + 1.6
 
-    top = cq.Workplane().copyWorkplane(
+    top = (
+        cq.Workplane().copyWorkplane(
             self.workplaneFromTagged('base')
             .workplane(offset=dimension.z_mm + 0.0001)
-    ) \
-        .box(dimension.x_mm, dimension.y_mm, height, (True, True, False)) \
-        .edges('|Z') \
-        .fillet(3.75) \
-        .faces('>Z').sketch().rect(dimension.x_mm - 2*2.4, dimension.y_mm - 2*2.4).vertices().fillet(3.75 - 2.4).finalize().cutThruAll() \
-        .faces('>Z').sketch().rect(dimension.x_mm, dimension.y_mm).vertices().fillet(3.75).finalize().cutThruAll(taper=45) \
-        .faces('<Z').sketch().rect(dimension.x_mm - 2*0.8, dimension.y_mm - 2*0.8).vertices().fillet(3.75).finalize().cutThruAll(taper=-45)
+        )
+        .box(dimension.x_mm, dimension.y_mm, height, (True, True, False))
+        .edges('|Z').fillet(3.75)
+        .faces('>Z').sketch()
+        .rect(dimension.x_mm - 2 * 2.4, dimension.y_mm - 2 * 2.4)
+        .vertices().fillet(3.75 - 2.4).finalize().cutThruAll()
+        .faces('>Z').sketch()
+        .rect(dimension.x_mm, dimension.y_mm)
+        .vertices().fillet(3.75).finalize().cutThruAll(taper=45)
+        .faces('<Z').sketch()
+        .rect(dimension.x_mm - 2 * 0.8, dimension.y_mm - 2 * 0.8)
+        .vertices().fillet(3.75).finalize().cutThruAll(taper=-45)
+    )
     return self.union(top)
 
 
@@ -199,12 +206,12 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
 
     top = (
         cq.Workplane().copyWorkplane(
-            self.workplaneFromTagged("base")
+            self.workplaneFromTagged('base')
             .workplane(offset=dimension.z_mm - 2.84)
         )
         .box(width, length, 7.24, (True, True, False))
-        .edges("|Z").fillet(outer_fillet)
-        .faces(">Z")
+        .edges('|Z').fillet(outer_fillet)
+        .faces('>Z')
         .placeSketch(
             s1,
             s2.moved(Location(Vector(0, 0, -1.9))),
@@ -213,7 +220,7 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
             s3.moved(Location(Vector(0, 0, -5.6))),
             s4.moved(Location(Vector(0, 0, -7.24)))
         )
-        .loft(True, "s")
+        .loft(True, 's')
     )
 
     return self.union(top)
@@ -228,8 +235,8 @@ def draw_finger_scoops(self: Workplane, dimension: GridfinityDimension) -> Workp
         sketch = (
             cq.Sketch()
             .rect(scoop_radius, scoop_radius)
-            .vertices(">X and >Y")
-            .circle(scoop_radius, mode="s")
+            .vertices('>X and >Y')
+            .circle(scoop_radius, mode='s')
             .moved(Location(Vector(
                 scoop_radius / 2 -
                 0.5 * bucket_length * dimension.y -
@@ -244,8 +251,8 @@ def draw_finger_scoops(self: Workplane, dimension: GridfinityDimension) -> Workp
         sketches.append(sketch)
 
     return (
-        self.faces(">X[1]")
-        .workplane(centerOption="CenterOfBoundBox")
+        self.faces('>X[1]')
+        .workplane(centerOption='CenterOfBoundBox')
         .placeSketch(*sketches)
         .extrude(dimension.x_mm - 0.8)
     )
@@ -282,7 +289,7 @@ def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workpla
             sketch
             .close()
             .assemble()
-            .vertices("<X")
+            .vertices('<X')
             .fillet(0.6)
             .moved(Location(Vector(
                 - 0.5 - (0.5 * dimension.y - 1) * (bucket_length + 1),
@@ -295,8 +302,8 @@ def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workpla
         sketches.append(sketch)
 
     return (
-        self.faces(">X[1]")
-        .workplane(centerOption="CenterOfBoundBox")
+        self.faces('>X[1]')
+        .workplane(centerOption='CenterOfBoundBox')
         .placeSketch(*sketches)
         .extrude(dimension.x_mm - 1.5)
     )
@@ -307,7 +314,7 @@ def draw_magnet_holes(self: Workplane) -> Workplane:
 
     self = (
         self
-        .faces("<Z[-1]")
+        .faces('<Z[-1]')
         .faces(cq.selectors.AreaNthSelector(-1))
         .rect(26, 26, forConstruction=True)
         .vertices()
@@ -321,7 +328,7 @@ def draw_screw_holes(self: Workplane) -> Workplane:
 
     self = (
         self
-        .faces("<Z[-1]")
+        .faces('<Z[-1]')
         .faces(cq.selectors.AreaNthSelector(-1))
         .rect(26, 26, forConstruction=True)
         .vertices()
@@ -343,8 +350,8 @@ Workplane.drawScrewHoles = draw_screw_holes
 def make_box(
     prop: Properties,
     out_file: Union[str, None] = None,
-    export_type: Optional[Literal["STL", "STEP", "AMF",
-                                  "SVG", "TJS", "DXF", "VRML", "VTP"]] = None,
+    export_type: Optional[Literal['STL', 'STEP', 'AMF',
+                                  'SVG', 'TJS', 'DXF', 'VRML', 'VTP']] = None,
     tolerance: float = 0.1,
     angular_tolerance: float = 0.1,
     opt=None
@@ -364,9 +371,11 @@ def make_box(
 
 
 def make_gridfinity_box(wp: Workplane, prop: Properties):
-    wp = wp \
-        .drawBases(prop.dimension) \
+    wp = (
+        wp
+        .drawBases(prop.dimension)
         .drawBuckets(prop.dimension, prop.divisions)
+    )
     if prop.draw_finger_scoop:
         wp = wp.drawFingerScoops(prop.dimension)
     if prop.draw_label_ledge:
@@ -383,8 +392,8 @@ def make_gridfinity_box(wp: Workplane, prop: Properties):
 def export_box(
     box: Workplane,
     out_file: Union[str, None] = None,
-    export_type: Optional[Literal["STL", "STEP", "AMF",
-                                  "SVG", "TJS", "DXF", "VRML", "VTP"]] = None,
+    export_type: Optional[Literal['STL', 'STEP', 'AMF',
+                                  'SVG', 'TJS', 'DXF', 'VRML', 'VTP']] = None,
     tolerance: float = 0.1,
     angular_tolerance: float = 0.1,
     opt=None
@@ -407,12 +416,12 @@ def export_svg(
 ) -> Workplane:
 
     settings = {
-        "showAxes": False,
-        "marginLeft": 10,
-        "marginTop": 10,
-        "projectionDir": (2.75, -2.6, 2),
-        "showHidden": False,
-        "focus": 500
+        'showAxes': False,
+        'marginLeft': 10,
+        'marginTop': 10,
+        'projectionDir': (2.75, -2.6, 2),
+        'showHidden': False,
+        'focus': 500
     }
     if opt:
         settings.update(opt)
@@ -420,7 +429,7 @@ def export_svg(
     export_box(
         box,
         out_file=out_file,
-        export_type="SVG",
+        export_type='SVG',
         opt=settings
     )
 
