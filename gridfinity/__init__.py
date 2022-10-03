@@ -57,6 +57,8 @@ class Properties:
     dimension: GridfinityDimension
     divisions: Divisions
 
+    wall_thickness: float
+
     draw_finger_scoop: bool
     draw_label_ledge: bool
     make_magnet_hole: bool
@@ -96,7 +98,7 @@ def draw_base(
     )
 
 
-def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Divisions) -> Workplane:
+def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Divisions, wall_thickness: float) -> Workplane:
     is_drawer_too_small = False
     small_drawer_width = 15
 
@@ -105,10 +107,10 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     for row in divisions:
         if isinstance(row, int):
             row = [1] * row
-        buckets_x = [round(ratio / sum(row) * (dimension.x_mm - (len(row) + 1)*0.8), 2)
+        buckets_x = [round(ratio / sum(row) * (dimension.x_mm - (len(row) + 1) * wall_thickness), 2)
                   for ratio in row]
         number_of_y_walls = (dimension.y + 1)
-        bucket_y = (dimension.y_mm - number_of_y_walls * 0.8) / dimension.y
+        bucket_y = (dimension.y_mm - number_of_y_walls * wall_thickness) / dimension.y
 
         for bucket_x in buckets_x:
             if bucket_x < small_drawer_width:
@@ -117,21 +119,21 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
                 cq.Sketch()
                 .rect(bucket_x, bucket_y)
                 .vertices()
-                .fillet(3.75 - 0.4)
+                .fillet(3.75 - wall_thickness / 2)
                 .edges()
                 .moved(Location(Vector(
                     bucket_x / 2,
                     -bucket_y / 2
                 )))
                 .moved(Location(Vector(
-                    -dimension.x_mm / 2 + x_origin,
-                    dimension.y_mm / 2 - y_origin
+                    -dimension.x_mm / 2 + x_origin + wall_thickness/2,
+                    dimension.y_mm / 2 - y_origin - wall_thickness/2
                 )))
             )
-            x_origin = x_origin + bucket_x + 0.8
+            x_origin = x_origin + bucket_x + wall_thickness
             sketches.append(sketch)
         x_origin = 1
-        y_origin = y_origin + bucket_y + 0.8
+        y_origin = y_origin + bucket_y + wall_thickness
 
     if is_drawer_too_small:
         warnings.warn(
@@ -374,7 +376,7 @@ def make_gridfinity_box(wp: Workplane, prop: Properties):
     wp = (
         wp
         .drawBases(prop.dimension)
-        .drawBuckets(prop.dimension, prop.divisions)
+        .drawBuckets(prop.dimension, prop.divisions, prop.wall_thickness)
     )
     if prop.draw_finger_scoop:
         wp = wp.drawFingerScoops(prop.dimension)

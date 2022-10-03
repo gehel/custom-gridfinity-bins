@@ -21,6 +21,8 @@ DIVISIONS = [
                # The numbers are ratio'd dynamically.
 ]
 
+WALL_THICKNESS = 0.8
+
 # Draw the rounded finger scoop on the front of each drawer.
 DRAW_FINGER_SCOOP = True
 # Draws a 12mm label ledge on each row.
@@ -37,6 +39,7 @@ MAKE_SCREW_HOLE = False
 properties = Properties(
     GridfinityDimension(UNITS_WIDE, UNITS_LONG, UNITS_HIGH),
     DIVISIONS,
+    WALL_THICKNESS,
     DRAW_FINGER_SCOOP,
     DRAW_LABEL_LEDGE,
     MAKE_MAGNET_HOLE,

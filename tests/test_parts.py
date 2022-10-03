@@ -18,6 +18,7 @@ class MyTestCase(unittest.TestCase):
     properties = Properties(
         GridfinityDimension(2, 3, 4),
         [1, 2, [2, 1]],
+        0.8,
         True,
         True,
         False,
@@ -36,13 +37,19 @@ class MyTestCase(unittest.TestCase):
     def test_draw_buckets(self):
         wp = cq.Workplane()
         wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5.6)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
+        export_for_testing(wp)
+
+    def test_draw_buckets_thick_walls(self):
+        wp = cq.Workplane()
+        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5.6)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, 4)
         export_for_testing(wp)
 
     def test_draw_up_to_buckets(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         export_for_testing(wp)
 
     def test_draw_finger_scoops(self):
@@ -54,7 +61,7 @@ class MyTestCase(unittest.TestCase):
     def test_draw_up_to_finger_scoops(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_finger_scoops(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -67,7 +74,7 @@ class MyTestCase(unittest.TestCase):
     def test_draw_up_to_label_ledge(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_label_ledge(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -84,7 +91,7 @@ class MyTestCase(unittest.TestCase):
     def test_draw_up_to_mate(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_mate(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -97,7 +104,7 @@ class MyTestCase(unittest.TestCase):
     def test_draw_up_to_mate2(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_mate2(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -122,7 +129,7 @@ class MyTestCase(unittest.TestCase):
         dimension = GridfinityDimension(1, 1, 8)
         wp = cq.Workplane()
         wp = draw_bases(wp, dimension)
-        wp = draw_buckets(wp, dimension, [1])
+        wp = draw_buckets(wp, dimension, [1], 0.8)
         wp = draw_mate2(wp, dimension)
         export_for_testing(wp)
 
