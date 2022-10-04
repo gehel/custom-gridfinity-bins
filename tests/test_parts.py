@@ -26,12 +26,17 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_bases(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
+        export_for_testing(wp)
+
+    def test_draw_bases_with_magnet_holes(self):
+        wp = cq.Workplane()
+        wp = draw_bases(wp, self.properties.dimension, True)
         export_for_testing(wp)
 
     def test_draw_base(self):
         wp = cq.Workplane()
-        wp = draw_base(wp)
+        wp = draw_base(wp, self.properties.make_magnet_hole)
         export_for_testing(wp)
 
     def test_draw_bucket_sketch(self):
@@ -73,8 +78,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_up_to_buckets(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
-        wp = draw_magnet_holes(wp)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         export_for_testing(wp)
 
@@ -86,7 +90,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_up_to_finger_scoops(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_finger_scoops(wp, self.properties.dimension)
         export_for_testing(wp)
@@ -99,7 +103,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_up_to_label_ledge(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_label_ledge(wp, self.properties.dimension)
         export_for_testing(wp)
@@ -116,7 +120,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_up_to_mate(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_mate(wp, self.properties.dimension)
         export_for_testing(wp)
@@ -129,7 +133,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_up_to_mate2(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_mate2(wp, self.properties.dimension)
         export_for_testing(wp)
@@ -142,7 +146,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_up_to_magnet_holes(self):
         wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_magnet_holes(wp)
         export_for_testing(wp)
@@ -161,7 +165,7 @@ class MyTestCase(unittest.TestCase):
     def test_minimal_box(self):
         dimension = GridfinityDimension(1, 1, 8)
         wp = cq.Workplane()
-        wp = draw_bases(wp, dimension)
+        wp = draw_bases(wp, dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, dimension, [1], 0.8)
         wp = draw_mate2(wp, dimension)
         export_for_testing(wp)

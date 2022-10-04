@@ -75,22 +75,23 @@ class Properties:
             )
 
 
-def draw_bases(self: Workplane, dimension: GridfinityDimension) -> Workplane:
+def draw_bases(self: Workplane, dimension: GridfinityDimension, draw_magnet_holes: bool) -> Workplane:
     return (
         self
         .rarray(42, 42, dimension.x, dimension.y)
         .eachpoint(lambda loc: (
             cq.Workplane()
-            .drawBase()
+            .drawBase(draw_magnet_holes)
             .val().located(loc)
         ))
     )
 
 
 def draw_base(
-    self: Workplane
+    self: Workplane,
+    with_magnets: bool
 ) -> Workplane:
-    return (
+    wp = (
         self
         .box(36.7, 36.7, 2.6, (True, True, False))
         .edges('|Z').fillet(1.6)
@@ -99,6 +100,17 @@ def draw_base(
         .box(41.5, 41.5, 2.4, (True, True, False))
         .edges('|Z and (>Y or <Y)').fillet(3.75)
         .faces('>>Z[-2]').edges('<Z').chamfer(2.4-0.000001)
+    )
+    if with_magnets:
+        wp = draw_magnet_holes(wp)
+    return wp
+
+
+def draw_magnet_holes(self: Workplane) -> Workplane:
+    return (
+        self.faces('<Z').workplane()
+        .rect(26, 26, forConstruction=True)
+        .vertices().hole(6.5, 2 + 0.5)
     )
 
 
@@ -328,20 +340,6 @@ def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workpla
     )
 
 
-def draw_magnet_holes(self: Workplane) -> Workplane:
-    self.plane.zDir = Vector(0, 0, -1)
-
-    self = (
-        self
-        .faces('<Z[-1]')
-        .faces(cq.selectors.AreaNthSelector(-1))
-        .rect(26, 26, forConstruction=True)
-        .vertices()
-    )
-
-    return self.hole(6.5, 2 + 0.5)
-
-
 def draw_screw_holes(self: Workplane) -> Workplane:
     self.plane.zDir = Vector(0, 0, -1)
 
@@ -391,11 +389,9 @@ def make_box(
 def make_gridfinity_box(wp: Workplane, prop: Properties):
     wp = (
         wp
-        .drawBases(prop.dimension)
+        .drawBases(prop.dimension, prop.make_magnet_hole)
         .drawBuckets(prop.dimension, prop.divisions, prop.wall_thickness)
     )
-    if prop.make_magnet_hole:
-        wp = wp.drawMagnetHoles()
     if prop.make_screw_hole:
         wp = wp.drawScrewHoles()
     if prop.draw_finger_scoop:
