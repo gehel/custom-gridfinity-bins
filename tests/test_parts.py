@@ -5,7 +5,7 @@ import inspect
 
 from cadquery2 import Workplane
 
-from gridfinity import draw_base, draw_bases, draw_buckets, draw_finger_scoops, draw_label_ledge, \
+from gridfinity import draw_base, draw_bases, draw_bucket_sketch, draw_buckets, draw_finger_scoops, draw_label_ledge, \
     draw_magnet_holes, draw_mate, draw_mate2, draw_screw_holes, GridfinityDimension, \
     make_gridfinity_box, Properties
 
@@ -34,6 +34,31 @@ class MyTestCase(unittest.TestCase):
         wp = draw_base(wp)
         export_for_testing(wp)
 
+    def test_draw_bucket_sketch(self):
+        wp = cq.Workplane()
+        wp = wp.box(100, 200, 1)
+
+        buckets = []
+
+        bucket = draw_bucket_sketch(
+            x_mm=94, y_mm=95.5,
+            support_x_mm=100, support_y_mm=200,
+            x_origin=3, y_origin=3,
+            wall_thickness=3, small_drawer_width=16
+        )
+        buckets.append(bucket)
+
+        bucket = draw_bucket_sketch(
+            x_mm=94, y_mm=95.5,
+            support_x_mm=100, support_y_mm=200,
+            x_origin=3, y_origin=3 + 95.5 + 3,
+            wall_thickness=3, small_drawer_width=16
+        )
+        buckets.append(bucket)
+
+        wp = wp.placeSketch(*buckets).cutThruAll()
+        export_for_testing(wp)
+
     def test_draw_buckets(self):
         wp = cq.Workplane()
         wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5.6)
@@ -43,12 +68,13 @@ class MyTestCase(unittest.TestCase):
     def test_draw_buckets_thick_walls(self):
         wp = cq.Workplane()
         wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5.6)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, 4)
+        wp = draw_buckets(wp, self.properties.dimension, [[3, 4], 5, [2, 1]], 3)
         export_for_testing(wp)
 
     def test_draw_up_to_buckets(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_magnet_holes(wp)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         export_for_testing(wp)
 
@@ -111,6 +137,13 @@ class MyTestCase(unittest.TestCase):
     def test_draw_magnet_holes(self):
         wp = cq.Workplane()
         wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 5)
+        wp = draw_magnet_holes(wp)
+        export_for_testing(wp)
+
+    def test_draw_up_to_magnet_holes(self):
+        wp = cq.Workplane()
+        wp = draw_bases(wp, self.properties.dimension)
+        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_magnet_holes(wp)
         export_for_testing(wp)
 

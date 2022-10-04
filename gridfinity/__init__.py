@@ -1,10 +1,14 @@
 import math
-import cadquery2 as cq
 import warnings
-from cadquery2 import Workplane, Vector, Location
 from typing import List, Union, Optional, Literal
 from dataclasses import dataclass
 
+try:
+    import cadquery2 as cq
+    from cadquery2 import Sketch, Workplane, Vector, Location
+except ImportError:
+    import cadquery as cq
+    from cadquery import Sketch, Workplane, Vector, Location
 
 BOTTOM_THICKNESS = 2
 
@@ -34,15 +38,15 @@ class GridfinityDimension:
     z: int
 
     @property
-    def x_mm(self):
+    def x_mm(self) -> float:
         return self.x * 42 - 0.5
 
     @property
-    def y_mm(self):
+    def y_mm(self) -> float:
         return self.y * 42 - 0.5
 
     @property
-    def z_mm(self):
+    def z_mm(self) -> float:
         return self.z * 7 - 5.6
 
     def __post_init__(self):
@@ -103,36 +107,24 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     small_drawer_width = 15
 
     sketches = []
-    x_origin, y_origin = (1, 1)
+    x_origin, y_origin = (wall_thickness, wall_thickness)
     for row in divisions:
         if isinstance(row, int):
             row = [1] * row
-        buckets_x = [round(ratio / sum(row) * (dimension.x_mm - (len(row) + 1) * wall_thickness), 2)
-                  for ratio in row]
-        number_of_y_walls = (dimension.y + 1)
-        bucket_y = (dimension.y_mm - number_of_y_walls * wall_thickness) / dimension.y
+
+        number_of_x_walls = len(row) + 1
+        buckets_x = [(ratio / sum(row)) * (dimension.x_mm - number_of_x_walls * wall_thickness) for ratio in row]
+        number_of_y_walls = len(divisions) + 1
+        bucket_y = (dimension.y_mm - number_of_y_walls * wall_thickness) / len(divisions)
 
         for bucket_x in buckets_x:
-            if bucket_x < small_drawer_width:
-                is_drawer_too_small = True
-            sketch = (
-                cq.Sketch()
-                .rect(bucket_x, bucket_y)
-                .vertices()
-                .fillet(3.75 - wall_thickness / 2)
-                .edges()
-                .moved(Location(Vector(
-                    bucket_x / 2,
-                    -bucket_y / 2
-                )))
-                .moved(Location(Vector(
-                    -dimension.x_mm / 2 + x_origin + wall_thickness/2,
-                    dimension.y_mm / 2 - y_origin - wall_thickness/2
-                )))
-            )
+            sketch = draw_bucket_sketch(bucket_x, bucket_y, dimension.x_mm, dimension.y_mm, x_origin, y_origin,
+                                        wall_thickness, small_drawer_width)
+
             x_origin = x_origin + bucket_x + wall_thickness
             sketches.append(sketch)
-        x_origin = 1
+
+        x_origin = wall_thickness
         y_origin = y_origin + bucket_y + wall_thickness
 
     if is_drawer_too_small:
@@ -151,6 +143,31 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
         .placeSketch(*sketches)
         .extrude(BOTTOM_THICKNESS - dimension.z_mm, 'cut')
     )
+
+
+def draw_bucket_sketch(x_mm: float, y_mm: float, support_x_mm: float, support_y_mm: float, x_origin: float,
+                       y_origin: float, wall_thickness: float, small_drawer_width: float) -> Sketch:
+    if x_mm < small_drawer_width:
+        warnings.warn(
+            f'Drawer width is less than or equal to {small_drawer_width}mm',
+            SmallDimensionsWarning
+        )
+    sketch = (
+        cq.Sketch()
+        .rect(x_mm, y_mm)
+        .vertices()
+        .fillet(3.75 - wall_thickness)
+        .edges()
+        .moved(Location(Vector(
+            x_mm / 2,
+            -y_mm / 2
+        )))
+        .moved(Location(Vector(
+            -support_x_mm / 2 + x_origin,
+            support_y_mm / 2 - y_origin
+        )))
+    )
+    return sketch
 
 
 def draw_mate2(self: Workplane, dimension: GridfinityDimension) -> Workplane:
@@ -322,7 +339,7 @@ def draw_magnet_holes(self: Workplane) -> Workplane:
         .vertices()
     )
 
-    return self.hole(6.5, 2.4)
+    return self.hole(6.5, 2 + 0.5)
 
 
 def draw_screw_holes(self: Workplane) -> Workplane:
@@ -330,13 +347,12 @@ def draw_screw_holes(self: Workplane) -> Workplane:
 
     self = (
         self
-        .faces('<Z[-1]')
-        .faces(cq.selectors.AreaNthSelector(-1))
+        .faces('>Z')
         .rect(26, 26, forConstruction=True)
         .vertices()
     )
 
-    return self.cboreHole(3, 6.5, 2.4, 6)
+    return self.cboreHole(3, 6.5, 2.4)
 
 
 Workplane.drawBase = draw_base
@@ -378,15 +394,15 @@ def make_gridfinity_box(wp: Workplane, prop: Properties):
         .drawBases(prop.dimension)
         .drawBuckets(prop.dimension, prop.divisions, prop.wall_thickness)
     )
+    if prop.make_magnet_hole:
+        wp = wp.drawMagnetHoles()
+    if prop.make_screw_hole:
+        wp = wp.drawScrewHoles()
     if prop.draw_finger_scoop:
         wp = wp.drawFingerScoops(prop.dimension)
     if prop.draw_label_ledge:
         wp = wp.drawLabelLedge(prop.dimension)
     wp = wp.drawMate(prop.dimension)
-    if prop.make_magnet_hole:
-        wp = wp.drawMagnetHoles()
-    if prop.make_screw_hole:
-        wp = wp.drawScrewHoles()
 
     return wp
 
