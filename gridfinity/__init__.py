@@ -182,7 +182,7 @@ def draw_bucket_sketch(x_mm: float, y_mm: float, support_x_mm: float, support_y_
     return sketch
 
 
-def draw_mate2(self: Workplane, dimension: GridfinityDimension) -> Workplane:
+def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     height = 2.4 + 1 + 1.6
 
     top = (
@@ -193,8 +193,8 @@ def draw_mate2(self: Workplane, dimension: GridfinityDimension) -> Workplane:
         .box(dimension.x_mm, dimension.y_mm, height, (True, True, False))
         .edges('|Z').fillet(3.75)
         .faces('>Z').sketch()
-        .rect(dimension.x_mm - 2 * 2.4, dimension.y_mm - 2 * 2.4)
-        .vertices().fillet(3.75 - 2.4).finalize().cutThruAll()
+        .rect(dimension.x_mm - 2 * 2.4 - 0.5, dimension.y_mm - 2 * 2.4 - 0.5)
+        .vertices().fillet(3.75 - 2.4 + 0.25).finalize().cutThruAll()
         .faces('>Z').sketch()
         .rect(dimension.x_mm, dimension.y_mm)
         .vertices().fillet(3.75).finalize().cutThruAll(taper=45)
@@ -202,58 +202,6 @@ def draw_mate2(self: Workplane, dimension: GridfinityDimension) -> Workplane:
         .rect(dimension.x_mm - 2 * 0.8, dimension.y_mm - 2 * 0.8)
         .vertices().fillet(3.75).finalize().cutThruAll(taper=-45)
     )
-    return self.union(top)
-
-
-def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
-
-    width = dimension.x_mm
-    length = dimension.y_mm
-    outer_fillet = 3.75
-
-    s1 = (
-        cq.Sketch()
-        .rect(width, length)
-        .vertices().fillet(outer_fillet)
-    )
-
-    s2 = (
-        cq.Sketch()
-        .rect(width - 1.9 * 2, length - 1.9 * 2)
-        .vertices().fillet(outer_fillet - 1.9)
-    )
-
-    s3 = (
-        cq.Sketch()
-        .rect(width - 2.6 * 2, length - 2.6 * 2)
-        .vertices().fillet(outer_fillet - 2.6)
-    )
-
-    s4 = (
-        cq.Sketch()
-        .rect(width - 0.8 * 2, length - 0.8 * 2)
-        .vertices().fillet(outer_fillet - 1)
-    )
-
-    top = (
-        cq.Workplane().copyWorkplane(
-            self.workplaneFromTagged('base')
-            .workplane(offset=dimension.z_mm - 2.84)
-        )
-        .box(width, length, 7.24, (True, True, False))
-        .edges('|Z').fillet(outer_fillet)
-        .faces('>Z')
-        .placeSketch(
-            s1,
-            s2.moved(Location(Vector(0, 0, -1.9))),
-            s2.moved(Location(Vector(0, 0, -3.7))),
-            s3.moved(Location(Vector(0, 0, -4.4))),
-            s3.moved(Location(Vector(0, 0, -5.6))),
-            s4.moved(Location(Vector(0, 0, -7.24)))
-        )
-        .loft(True, 's')
-    )
-
     return self.union(top)
 
 

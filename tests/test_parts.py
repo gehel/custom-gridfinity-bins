@@ -6,7 +6,7 @@ import inspect
 from cadquery2 import Workplane
 
 from gridfinity import draw_base, draw_bases, draw_bucket_sketch, draw_buckets, draw_finger_scoops, draw_label_ledge, \
-    draw_magnet_holes, draw_mate, draw_mate2, draw_screw_holes, GridfinityDimension, \
+    draw_magnet_holes, draw_mate, draw_screw_holes, GridfinityDimension, \
     make_gridfinity_box, Properties
 
 
@@ -110,11 +110,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_draw_mate(self):
         wp = cq.Workplane()
-        wp = (
-            wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1)
-            .faces('<Z[0]')
-            .tag('base')
-        )
+        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1).faces('<Z[0]').tag('base')
         wp = draw_mate(wp, self.properties.dimension)
         export_for_testing(wp)
 
@@ -123,19 +119,6 @@ class MyTestCase(unittest.TestCase):
         wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
         wp = draw_mate(wp, self.properties.dimension)
-        export_for_testing(wp)
-
-    def test_draw_mate2(self):
-        wp = cq.Workplane()
-        wp = wp.box(self.properties.dimension.x_mm, self.properties.dimension.y_mm, 1).faces('<Z[0]').tag('base')
-        wp = draw_mate2(wp, self.properties.dimension)
-        export_for_testing(wp)
-
-    def test_draw_up_to_mate2(self):
-        wp = cq.Workplane()
-        wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
-        wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
-        wp = draw_mate2(wp, self.properties.dimension)
         export_for_testing(wp)
 
     def test_draw_magnet_holes(self):
@@ -163,11 +146,11 @@ class MyTestCase(unittest.TestCase):
         export_for_testing(wp)
 
     def test_minimal_box(self):
-        dimension = GridfinityDimension(1, 1, 8)
+        dimension = GridfinityDimension(1, 1, 2)
         wp = cq.Workplane()
         wp = draw_bases(wp, dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, dimension, [1], 0.8)
-        wp = draw_mate2(wp, dimension)
+        wp = draw_mate(wp, dimension)
         export_for_testing(wp)
 
 
