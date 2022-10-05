@@ -193,7 +193,7 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
         .box(dimension.x_mm, dimension.y_mm, height, (True, True, False))
         .edges('|Z').fillet(3.75)
         .faces('>Z').sketch()
-        .rect(dimension.x_mm - 2 * 2.4 - 0.5, dimension.y_mm - 2 * 2.4 - 0.5)
+        .rect(dimension.x_mm - 2 * 2.4 + 0.5, dimension.y_mm - 2 * 2.4 + 0.5)
         .vertices().fillet(3.75 - 2.4 + 0.25).finalize().cutThruAll()
         .faces('>Z').sketch()
         .rect(dimension.x_mm, dimension.y_mm)
