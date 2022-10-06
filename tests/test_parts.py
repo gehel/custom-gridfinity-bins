@@ -98,14 +98,14 @@ class MyTestCase(unittest.TestCase):
     def test_draw_label_ledge(self):
         wp = cq.Workplane()
         wp = wp.box(1, self.properties.dimension.y_mm, self.properties.dimension.z_mm)
-        wp = draw_label_ledge(wp, self.properties.dimension)
+        wp = draw_label_ledge(wp, self.properties.dimension, self.properties.wall_thickness)
         export_for_testing(wp)
 
     def test_draw_up_to_label_ledge(self):
         wp = cq.Workplane()
         wp = draw_bases(wp, self.properties.dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, self.properties.dimension, self.properties.divisions, self.properties.wall_thickness)
-        wp = draw_label_ledge(wp, self.properties.dimension)
+        wp = draw_label_ledge(wp, self.properties.dimension, self.properties.wall_thickness)
         export_for_testing(wp)
 
     def test_draw_mate(self):
@@ -146,7 +146,7 @@ class MyTestCase(unittest.TestCase):
         export_for_testing(wp)
 
     def test_minimal_box(self):
-        dimension = GridfinityDimension(1, 1, 2)
+        dimension = GridfinityDimension(1, 1, 7)
         wp = cq.Workplane()
         wp = draw_bases(wp, dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, dimension, [1], 0.8)

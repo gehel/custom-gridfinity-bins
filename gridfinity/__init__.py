@@ -47,7 +47,7 @@ class GridfinityDimension:
 
     @property
     def z_mm(self) -> float:
-        return self.z * 7 - 5.6
+        return self.z * 7
 
     def __post_init__(self):
         if self.x < 1 or self.y < 1:
@@ -118,6 +118,8 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     is_drawer_too_small = False
     small_drawer_width = 15
 
+    buckets_height = dimension.z_mm - 5 - 5
+
     sketches = []
     x_origin, y_origin = (wall_thickness, wall_thickness)
     for row in divisions:
@@ -148,12 +150,12 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     return (
         self
         .faces('<Z[0]').workplane(centerOption='CenterOfBoundBox').tag('base')
-        .box(dimension.x_mm, dimension.y_mm, dimension.z_mm, (True, True, False))
+        .box(dimension.x_mm, dimension.y_mm, buckets_height, (True, True, False))
         .edges('|Z').fillet(3.75)
         .faces('>Z')
         .workplane()
         .placeSketch(*sketches)
-        .extrude(BOTTOM_THICKNESS - dimension.z_mm, 'cut')
+        .extrude(wall_thickness - buckets_height, 'cut')
     )
 
 
@@ -188,7 +190,7 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     top = (
         cq.Workplane().copyWorkplane(
             self.workplaneFromTagged('base')
-            .workplane(offset=dimension.z_mm + 0.0001)
+            .workplane(offset=dimension.z_mm - 5 - height + 0.0001)
         )
         .box(dimension.x_mm, dimension.y_mm, height, (True, True, False))
         .edges('|Z').fillet(3.75)
@@ -237,12 +239,12 @@ def draw_finger_scoops(self: Workplane, dimension: GridfinityDimension) -> Workp
     )
 
 
-def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workplane:
-    bucket_length = (dimension.y_mm - (dimension.y + 1)) / dimension.y
+def draw_label_ledge(self: Workplane, dimension: GridfinityDimension, wall_thickness: float) -> Workplane:
+    bucket_length = (dimension.y_mm - (dimension.y + 1) * wall_thickness) / dimension.y
     ledge_length = 12 + 0.75
     back_ledge_offset = 2.9
 
-    max_ledge_height = dimension.z_mm - BOTTOM_THICKNESS
+    max_ledge_height = dimension.z_mm - 5 - 5 - wall_thickness
 
     last_offset = 0
     ledge_height = min(max_ledge_height, ledge_length)
@@ -272,7 +274,7 @@ def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workpla
             .fillet(0.6)
             .moved(Location(Vector(
                 - 0.5 - (0.5 * dimension.y - 1) * (bucket_length + 1),
-                (dimension.z_mm - BOTTOM_THICKNESS) / 2)))
+                (dimension.z_mm - wall_thickness) / 2)))
             .moved(Location(Vector(
                 i * (bucket_length + 1) - last_offset,
                 0
@@ -284,7 +286,7 @@ def draw_label_ledge(self: Workplane, dimension: GridfinityDimension) -> Workpla
         self.faces('>X[1]')
         .workplane(centerOption='CenterOfBoundBox')
         .placeSketch(*sketches)
-        .extrude(dimension.x_mm - 1.5)
+        .extrude(dimension.x_mm - wall_thickness*2)
     )
 
 
@@ -345,7 +347,7 @@ def make_gridfinity_box(wp: Workplane, prop: Properties):
     if prop.draw_finger_scoop:
         wp = wp.drawFingerScoops(prop.dimension)
     if prop.draw_label_ledge:
-        wp = wp.drawLabelLedge(prop.dimension)
+        wp = wp.drawLabelLedge(prop.dimension, prop.wall_thickness)
     wp = wp.drawMate(prop.dimension)
 
     return wp
