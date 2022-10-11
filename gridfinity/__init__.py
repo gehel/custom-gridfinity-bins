@@ -58,6 +58,9 @@ class GridfinityDimension:
         if self.z < 2:
             raise InvalidPropertyError('Units high cannot be less than 2.')
 
+    def __str__(self) -> str:
+        return '{dimension.x}x{dimension.y}x{dimension.z}'.format(dimension=self)
+
 
 @dataclass
 class Properties:
@@ -76,6 +79,33 @@ class Properties:
             raise IncorrectNumberOfRowsError(
                 'Number of rows in divisions array must be equal to the number of units long.'
             )
+
+    def __str__(self) -> str:
+        if self.draw_finger_scoop:
+            finger_scoop = '_with-finger_scoop'
+        else:
+            finger_scoop = ''
+        if self.draw_label_ledge:
+            label_ledge = '_with-label-ledge'
+        else:
+            label_ledge = ''
+        if self.make_magnet_hole:
+            magnet_holes = '_with-magnet-holes'
+        else:
+            magnet_holes = ''
+        if self.make_screw_hole:
+            screw_holes = '_with-screw-holes'
+        else:
+            screw_holes = ''
+
+        return 'gridfinity_bin_{dimension}_{wall_thickness}{finger_scoop}{label_ledge}{magnet_holes}{screw_holes}'.format(
+            dimension=self.dimension,
+            wall_thickness=self.wall_thickness,
+            finger_scoop=finger_scoop,
+            label_ledge=label_ledge,
+            magnet_holes=magnet_holes,
+            screw_holes=screw_holes
+        )
 
 
 def draw_bases(self: Workplane, dimension: GridfinityDimension, draw_magnet_holes: bool) -> Workplane:

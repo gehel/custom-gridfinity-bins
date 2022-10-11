@@ -11,6 +11,33 @@ from gridfinity import draw_base, draw_bases, draw_bucket_sketch, draw_buckets, 
     make_gridfinity_box, Properties
 
 
+class GridfinityDimensionTests(unittest.TestCase):
+
+    def test_str(self):
+        self.assertEqual(
+            GridfinityDimension(2, 3, 4).__str__(),
+            '2x3x4'
+        )
+
+
+class PropertiesTests(unittest.TestCase):
+
+    properties = Properties(
+        GridfinityDimension(2, 3, 4),
+        [1, 2, [2, 1]],
+        0.8,
+        True,
+        True,
+        False,
+        True)
+
+    def test_str(self):
+        self.assertEqual(
+            self.properties.__str__(),
+            'gridfinity_bin_2x3x4_0.8_with-finger_scoop_with-label-ledge_with-screw-holes'
+        )
+
+
 class MyTestCase(unittest.TestCase):
     """
     Generates SVG and STL files for the various intermediate operations. Those are expected to be validated
@@ -152,7 +179,7 @@ class MyTestCase(unittest.TestCase):
         wp = draw_bases(wp, dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, dimension, [1], 0.8)
         wp = draw_mate(wp, dimension)
-        export_for_testing(wp, 'gridfinity_bin_{x}x{y}x{z}'.format(x=dimension.x, y=dimension.y, z=dimension.z))
+        export_for_testing(wp, 'gridfinity_bin_{dimension.x}x{dimension.y}x{dimension.z}'.format(dimension=dimension))
 
 
 def export_for_testing(wp: Workplane, name: Optional[str] = None) -> None:
