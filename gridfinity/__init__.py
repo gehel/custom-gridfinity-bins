@@ -11,6 +11,9 @@ except ImportError:
     from cadquery import Sketch, Workplane, Vector, Location
 
 BOTTOM_THICKNESS = 2
+BASE_HEIGHT = 5
+MATE_HEIGHT = 5
+
 
 Divisions = List[Union[List[float], int]]
 
@@ -118,7 +121,7 @@ def draw_buckets(self: Workplane, dimension: GridfinityDimension, divisions: Div
     is_drawer_too_small = False
     small_drawer_width = 15
 
-    buckets_height = dimension.z_mm - 5 - 5
+    buckets_height = dimension.z_mm - MATE_HEIGHT
 
     sketches = []
     x_origin, y_origin = (wall_thickness, wall_thickness)
@@ -190,7 +193,7 @@ def draw_mate(self: Workplane, dimension: GridfinityDimension) -> Workplane:
     top = (
         cq.Workplane().copyWorkplane(
             self.workplaneFromTagged('base')
-            .workplane(offset=dimension.z_mm - 5 - height + 0.0001)
+            .workplane(offset=dimension.z_mm - height + 0.0001)
         )
         .box(dimension.x_mm, dimension.y_mm, height, (True, True, False))
         .edges('|Z').fillet(3.75)

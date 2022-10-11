@@ -1,4 +1,5 @@
 import unittest
+from typing import Optional
 
 import cadquery2 as cq
 import inspect
@@ -151,11 +152,12 @@ class MyTestCase(unittest.TestCase):
         wp = draw_bases(wp, dimension, self.properties.make_magnet_hole)
         wp = draw_buckets(wp, dimension, [1], 0.8)
         wp = draw_mate(wp, dimension)
-        export_for_testing(wp)
+        export_for_testing(wp, 'gridfinity_bin_{x}x{y}x{z}'.format(x=dimension.x, y=dimension.y, z=dimension.z))
 
 
-def export_for_testing(wp: Workplane) -> None:
-    name = inspect.getframeinfo(inspect.currentframe().f_back).function
+def export_for_testing(wp: Workplane, name: Optional[str] = None) -> None:
+    if name is None:
+        name = inspect.getframeinfo(inspect.currentframe().f_back).function
     export_svg(wp, name)
     export_stl(wp, name)
 
